@@ -53,6 +53,7 @@ class event_test extends \advanced_testcase {
             $constructorparams['type'],
             $constructorparams['times'],
             $constructorparams['visible'],
+            $constructorparams['uuid'],
             $constructorparams['subscription'],
             $constructorparams['location'],
             $constructorparams['component']
@@ -97,6 +98,7 @@ class event_test extends \advanced_testcase {
                         (new \DateTimeImmutable())->setTimestamp(115776000)
                     ),
                     'visible' => true,
+                    'uuid' => 'abc123',
                     'subscription' => new std_proxy(1, $lamecallable),
                     'location' => 'Test',
                     'component' => null

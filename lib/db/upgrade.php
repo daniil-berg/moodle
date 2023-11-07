@@ -1167,5 +1167,20 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2024041200.00);
     }
 
+    if ($oldversion < 2024041600.01) {
+        // Clean up of calendar events as laid out in the issue MDL-....
+        // Get the hostname suffix as per the old `calendar/export_execute.php` script.
+        $hostname = preg_replace('|https?://|', '', $CFG->wwwroot);
+        $numdeleted = upgrade_calendar_clean_up_recursive_events($hostname);
+        if ($numdeleted) {
+            error_log("Deleted $numdeleted recursively imported calendar events.");
+        }
+        $numassigned = upgrade_calendar_ensure_uuid_for_all_events($hostname);
+        if ($numassigned) {
+            error_log("Assigned UUIDs to $numassigned calendar events without one.");
+        }
+        upgrade_main_savepoint(true, 2024041600.01);
+    }
+
     return true;
 }

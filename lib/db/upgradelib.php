@@ -1824,3 +1824,207 @@ function upgrade_add_foreign_key_and_indexes() {
     // Launch add key contextid.
     $dbman->add_key($table, $key);
 }
+
+
+/**
+ * Helper function to check if two objects are the same in the specified properties.
+ *
+ * @param string[] $properties List of property names to compare.
+ * @param object $obj1 First object.
+ * @param object $obj2 Second object.
+ * @return bool `true` if `obj1` and `obj2` were exactly equal in every property from `properties`; `false` otherwise.
+ */
+function same_properties(array $properties, object $obj1, object $obj2) : bool {
+    foreach ($properties as $property) {
+        if (($obj1->$property ?? null) !== ($obj2->$property ?? null)) { return false; }
+    }
+    return true;
+}
+
+
+/**
+ * Checks whether two events look the same in their relevant properties.
+ * 
+ * The relevant properties are `name`, `description`, `format`, `timestart`, `timeduration`, `priority`, and `location`.
+ *
+ * @param object $event1 First event.
+ * @param object $event2 Second event.
+ * @return bool `true` if `event1` and `event2` were exactly equal in their relevant properties; `false` otherwise.
+ */
+function events_look_the_same(object $event1, object $event2) : bool {
+    $eventproperties = ['name', 'description', 'format', 'timestart', 'timeduration', 'priority', 'location'];
+    return same_properties($eventproperties, $event1, $event2);
+}
+
+
+/**
+ * Checks whether two events are from the same calendar.
+ *
+ * This is the case when they both have the same `subscriptionid` or if they are exactly equal in the properties
+ * `categorid`, `courseid`, `groupid`, and `userid`.
+ *
+ * @param object $event1 First event.
+ * @param object $event2 Second event.
+ * @return bool `true` if `event1` and `event2` were exactly equal in their relevant properties; `false` otherwise.
+ */
+function events_are_from_the_same_calendar(object $event1, object $event2) : bool {
+    $foreignkeys = ['categorid', 'courseid', 'groupid', 'userid'];
+    return $event1->subscriptionid === $event2->subscriptionid || same_properties($foreignkeys, $event1, $event2);
+}
+
+
+/**
+ * Extracts the supposed parent event's ID from the UUID of an event.
+ *
+ * If the UUID does not match the expected pattern, `0` is returned.
+ *
+ * @param string $uuid UUID string of an event.
+ * @return int ID of the parent event or 0.
+ */
+function get_parent_event_id(string $uuid) : int {
+    $uuidparts = explode('@', $uuid, 2);
+    return count($uuidparts) === 2 ? (int) $uuidparts[0] : 0;
+}
+
+
+/**
+ * Deletes events from the database in batches.
+ *
+ * Issues one `DELETE ... WHERE id IN ...` query for every batch.
+ *
+ * @param string[] $idstodelete Array of IDs of events to delete.
+ * @param int $batchsize Maximum number of ids to put in a single `DELETE` query.
+ * @throws dml_exception
+ */
+function batch_delete_events(array $idstodelete, int $batchsize = 1000) : void {
+    global $DB;
+    foreach (array_chunk($idstodelete, $batchsize) as $ids) {
+        try {
+            list($insql, $inparams) = $DB->get_in_or_equal($ids);
+        } catch (coding_exception) {
+            // This should be unreachable.
+            continue;
+        }
+        $DB->delete_records_select('event', "id $insql", $inparams);
+    }
+}
+
+
+/**
+ * Deletes all recursively imported events from subscriptions to calendars on the same Moodle instance.
+ *
+ * See issue MDL-... for details.
+ *
+ * We want to delete an event `E`, if it satisfies the following criteria:
+ * 0) `E` has a non-immediate ancestor event `A` on the same Moodle instance.
+ *    This means the following all hold true:
+ *    a) `E` has a `subscriptionid`.
+ *    b) The `uuid` of `E` has the pattern `"(\d+)@$hostname"` (e.g. `"123@moodle.example.com"`).
+ *    c) There is a "parent" event on the same Moodle instance with the `id` specified by the prefix (e.g. `123`).
+ *    d) The parent event satisfies points a, b, and c.
+ * 1) `A` looks the same in all relevant properties (see `$propertiestocompare` below).
+ * 2) Either of the following holds true:
+ *    a) `A` belongs to the same subscription as the one that created `E`, OR
+ *    b) `A` has the same `categorid`, `courseid`, `groupid` and `userid` as the subscription that created `E`.
+ *
+ * This picks up the self-referential subscription case, where a user subscribed to a calendar, to which events were
+ * added by that same subscription. Assuming an "organically" created event `e0` was in that calendar, the subscription
+ * would create a clone `e1` of `e0` during the first import, then another clone `e2` of `e1` during the second import
+ * and so on.
+ * The algorithm here deletes all clones except for `e1`, provided neither `e0` nor any clones were manually modified in
+ * any of their relevant properties. The first clone created by the subscription will remain.
+ * Since a subscription could imply a separate calendar on the user side, we want this to be possible and unaffected.
+ * Only re-imported events within a subscription cycle should be deleted.
+ *
+ * This also covers the case where two or more distinct subscriptions import events from one another.
+ * Assume the following three-node recursive import setup.
+ * Subscription `s1` populates a calendar belonging to user `u1`, which is queried by a different subscription `s2`,
+ * which populates a calendar of user `u2` queried by yet another subscription `s3`, which populates a calendar
+ * belonging to user `u3`, and that is in turn queried by `s1`.
+ * Assume an organically created event `e0` in the calendar of user `u3`.
+ * - `s1` creates a clone `s1e1` of `e0` in its calendar during its first import.
+ * - `s2` creates a clone `s2e1` of `s1e1` in its calendar during its first import.
+ * - `s3` creates a clone `s3e1` of `s2e1` in its calendar during its first import.
+ * - `s1` creates a clone `s1e2` of `s3e1` in its calendar during its second import.
+ * - `s2` creates a clone `s2e2` of `s1e2` in its calendar during its second import.
+ * - `s3` creates a clone `s3e2` of `s2e2` in its calendar during its second import.
+ * - And so on.
+ * Provided neither `e0` nor any clones were manually modified in any of their relevant properties, the algorithm here
+ * will only keep the `sXs1`-clones (and `e0` of course) and delete all others.
+ *
+ * WARNING: For large `event` tables, this function can take a long time to run.
+ *          To avoid running out of memory (since e.g. event descriptions must be loaded, and they can be quite large),
+ *          the number of DB lookup queries is in `O(n)`, with `n` being the number of rows in the `event` table.
+ *          Deletion queries are issued in batches to be safe (not passing `IN`-clauses that are too large).
+ *
+ * @param string $hostname Host name of the current Moodle instance to match imported UUIDs on.
+ * @return int Number of calendar events that have been deleted.
+ * @throws dml_exception
+ */
+function upgrade_calendar_clean_up_recursive_events(string $hostname): int {
+    global $DB;
+    // This will store the IDs of events to be deleted as keys (for faster lookup) and `null` values.
+    $idstodelete = [];
+    // We consider an event to be (almost certainly) imported from the same Moodle instance, if it belongs to any
+    // subscription (i.e. it was imported via a URL) and its `uuid` string ends with the given hostname suffix.
+    $sql = "SELECT * 
+              FROM {event} AS e
+             WHERE e.subscriptionid IS NOT NULL
+                   AND {$DB->sql_like('uuid', ':uuidpattern')}";
+    $params = ['uuidpattern' => "%@$hostname"];
+    // If an event has a parent in the same Moodle database, but that parent was not imported from the same Moodle
+    // instance, we do not want to delete the event. Therefore, we can reuse the SQL query from above to find parents.
+    $parentsql = $sql . ' AND id = :id';
+    // The following closure returns the parent of an event from the database.
+    // If the event's UUID does not match the expected pattern or no matching record is found, `false` is returned.
+    $getparentevent = function (object $event) use ($DB, $parentsql, $params) : mixed {
+        if (!$parentid = get_parent_event_id($event->uuid)) { return false; }
+        return $DB->get_record_sql($parentsql, $params + ['id' => $parentid]);
+    };
+    // Iterate over all events imported from the same Moodle instance.
+    foreach ($DB->get_recordset_sql($sql, $params) as $event) {
+        // Try to find a parent event that satisfies our conditions.
+        $ancestorevent = $getparentevent($event);
+        while ($ancestorevent) {
+            // If we already decided to delete that ancestor, we can definitely delete the event.
+            if (array_key_exists($ancestorevent->id, $idstodelete)) {
+                $idstodelete[$event->id] = null;
+                break;
+            }
+            // If the ancestor looks different, we stay on the safe side and do not delete.
+            if (!events_look_the_same($event, $ancestorevent)) {
+                break;
+            }
+            // If the ancestor looks the same and is from the same calendar, we can safely delete the event.
+            if (events_are_from_the_same_calendar($event, $ancestorevent)) {
+                $idstodelete[$event->id] = null;
+                break;
+            }
+            // The ancestor looks the same, but is not from the same calendar.
+            // We might still have an import cycle. (Subscriptions importing each other.) Move up the ancestry branch.
+            $ancestorevent = $getparentevent($ancestorevent);
+        }
+    }
+    batch_delete_events(array_keys($idstodelete));
+    return count($idstodelete);
+}
+
+
+/**
+ * Assigns a `uuid` to all events that have an empty string for it.
+ *
+ * Uses the former `<id>@<hostname>` logic to have backwards compatibility.
+ *
+ * @param string $hostname Host name of the current Moodle instance use as UUID suffix.
+ * @return int   Number of calendar events that have been updated.
+ * @throws dml_exception
+ */
+function upgrade_calendar_ensure_uuid_for_all_events(string $hostname): int {
+    global $DB;
+    $count = $DB->count_records('event', ['uuid' => '']);
+    $sql = "UPDATE {event}
+               SET uuid = {$DB->sql_concat("id", "'@'", ":hostname")}
+             WHERE uuid = ''";
+    $DB->execute($sql, ['hostname' => $hostname]);
+    return $count;
+}

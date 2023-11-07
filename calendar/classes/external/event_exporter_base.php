@@ -89,6 +89,7 @@ class event_exporter_base extends exporter {
         $data->timesort = $event->get_times()->get_sort_time()->getTimestamp();
         $data->timeusermidnight = $event->get_times()->get_usermidnight_time()->getTimestamp();
         $data->visible = $event->is_visible() ? 1 : 0;
+        $data->uuid = $event->get_uuid();
         $data->timemodified = $event->get_times()->get_modified_time()->getTimestamp();
         $data->component = $event->get_component();
         $data->overdue = $data->timesort < time();
