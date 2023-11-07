@@ -347,6 +347,7 @@ class container_test extends \advanced_testcase {
         $event->timesort = time();
         $event->timemodified = time();
         $event->timeduration = 0;
+        $event->uuid = 'abc123';
         $event->subscriptionid = null;
         $event->repeatid = 0;
         $legacyevent = $this->create_event($event);
@@ -432,6 +433,7 @@ class container_test extends \advanced_testcase {
         $event->timesort = time();
         $event->timemodified = time();
         $event->timeduration = 0;
+        $event->uuid = 'abc123';
         $event->subscriptionid = null;
         $event->repeatid = 0;
         $legacyevent = $this->create_event($event);
@@ -523,6 +525,7 @@ class container_test extends \advanced_testcase {
                     'timeduration' => 0,
                     'timesort' => 1486396800,
                     'visible' => 1,
+                    'uuid' => 'abc123',
                     'timemodified' => 1485793098,
                     'subscriptionid' => null,
                     'location' => 'Test location',
@@ -546,6 +549,7 @@ class container_test extends \advanced_testcase {
                     'timeduration' => 0,
                     'timesort' => 1486396800,
                     'visible' => 1,
+                    'uuid' => 'def456',
                     'timemodified' => 1485793098,
                     'subscriptionid' => null,
                     'location' => 'Test location',
@@ -602,6 +606,7 @@ class container_test extends \advanced_testcase {
             'timeduration' => 0,
             'timesort' => 1486396800,
             'visible' => 1,
+            'uuid' => 'abc123',
             'timemodified' => 1485793098,
             'subscriptionid' => null,
             'location' => 'Test location',
