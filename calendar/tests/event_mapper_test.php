@@ -250,6 +250,10 @@ class event_mapper_test_action_event implements action_event_interface {
         return $this->event->is_visible();
     }
 
+    public function get_uuid() {
+        return $this->event->get_uuid();
+    }
+
     public function get_action() {
         return new action(
             'test action',
@@ -385,6 +389,10 @@ class event_mapper_test_event implements event_interface {
 
     public function is_visible() {
         return true;
+    }
+
+    public function get_uuid() {
+        return 'abc123';
     }
 
     /**

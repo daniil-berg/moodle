@@ -103,6 +103,11 @@ class event implements event_interface {
     protected $visible;
 
     /**
+     * @var string $uuid The UUID of this event.
+     */
+    protected $uuid;
+
+    /**
      * @var string $component
      */
     protected $component;
@@ -127,6 +132,7 @@ class event implements event_interface {
      * @param string                     $type           The event's type.
      * @param times_interface            $times          The times associated with the event.
      * @param bool                       $visible        The event's visibility. True for visible, false for invisible.
+     * @param string                     $uuid           The event's UUID.
      * @param proxy_interface|null       $subscription   The event's subscription.
      * @param string                     $location       The event's location.
      * @param string                     $component      The event's component.
@@ -144,6 +150,7 @@ class event implements event_interface {
         $type,
         times_interface $times,
         $visible,
+        $uuid,
         proxy_interface $subscription = null,
         $location = null,
         $component = null
@@ -161,6 +168,7 @@ class event implements event_interface {
         $this->type = $type;
         $this->times = $times;
         $this->visible = $visible;
+        $this->uuid = $uuid;
         $this->subscription = $subscription;
         $this->component = $component;
     }
@@ -219,6 +227,10 @@ class event implements event_interface {
 
     public function is_visible() {
         return $this->visible;
+    }
+
+    public function get_uuid() {
+        return $this->uuid;
     }
 
     /**

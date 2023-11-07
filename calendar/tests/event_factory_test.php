@@ -126,6 +126,7 @@ class event_factory_test extends \advanced_testcase {
                 'timemodified' => 123456789,
                 'timesort' => 123456789,
                 'visible' => 1,
+                'uuid' => 'abc123',
                 'subscriptionid' => 1,
                 'location' => 'Test location',
             ]
@@ -176,6 +177,7 @@ class event_factory_test extends \advanced_testcase {
                 'timemodified' => 123456789,
                 'timesort' => 123456789,
                 'visible' => 1,
+                'uuid' => 'abc123',
                 'subscriptionid' => 1,
                 'location' => 'Test location',
             ]
@@ -226,6 +228,7 @@ class event_factory_test extends \advanced_testcase {
                 'timemodified' => 123456789,
                 'timesort' => 123456789,
                 'visible' => 1,
+                'uuid' => 'abc123',
                 'subscriptionid' => 1,
                 'location' => 'Test location',
             ]
@@ -276,6 +279,7 @@ class event_factory_test extends \advanced_testcase {
                 'timemodified' => 123456789,
                 'timesort' => 123456789,
                 'visible' => 1,
+                'uuid' => 'abc123',
                 'subscriptionid' => 1,
                 'location' => 'Test location',
             ]
@@ -332,6 +336,7 @@ class event_factory_test extends \advanced_testcase {
                 'timemodified' => 123456789,
                 'timesort' => 123456789,
                 'visible' => 1,
+                'uuid' => 'abc123',
                 'subscriptionid' => 1,
                 'location' => 'Test location',
             ]
@@ -367,6 +372,7 @@ class event_factory_test extends \advanced_testcase {
                     'timemodified' => 123456789,
                     'timesort' => 123456789,
                     'visible' => true,
+                    'uuid' => 'abc123',
                     'subscriptionid' => 1,
                     'location' => 'Test location',
                 ],
@@ -401,6 +407,7 @@ class event_factory_test extends \advanced_testcase {
                     'timemodified' => 123456789,
                     'timesort' => 123456789,
                     'visible' => true,
+                    'uuid' => 'def456',
                     'subscriptionid' => 1,
                     'location' => 'Test location',
                 ],
@@ -435,6 +442,7 @@ class event_factory_test extends \advanced_testcase {
                     'timemodified' => 123456789,
                     'timesort' => 123456789,
                     'visible' => true,
+                    'uuid' => '7890',
                     'subscriptionid' => 1,
                     'location' => 'Test location',
                 ],

@@ -222,6 +222,16 @@ class calendar_event {
             $data->id = null;
         }
 
+        if (isset($data->uuidgenerator)) {
+            $uuidgenerator = $data->uuidgenerator;
+            unset($data->uuidgenerator);
+        } else {
+            $uuidgenerator = '\core\uuid::generate';
+        }
+        if (empty($data->uuid)) {
+            $data->uuid = $uuidgenerator();
+        }
+
         if (!empty($data->subscriptionid)) {
             $data->subscription = calendar_get_subscription($data->subscriptionid);
         }

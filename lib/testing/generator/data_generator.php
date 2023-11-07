@@ -1289,14 +1289,16 @@ EOD;
     /**
      * Helper function used to create an event.
      *
-     * @param   array   $data
-     * @return  stdClass
+     * @param  array $data Associative array of field => value pairs for the new event.
+     * @return stdClass Object holding the properties of the newly created event.
+     * @throws coding_exception
+     * @throws moodle_exception
      */
-    public function create_event($data = []) {
+    public function create_event(array $data = []): stdClass {
         global $CFG;
 
         require_once($CFG->dirroot . '/calendar/lib.php');
-        $record = new \stdClass();
+        $record = new stdClass();
         $record->name = 'event name';
         $record->repeat = 0;
         $record->repeats = 0;
@@ -1312,6 +1314,7 @@ EOD;
         }
 
         switch ($record->eventtype) {
+            case 'site':
             case 'user':
                 unset($record->categoryid);
                 unset($record->courseid);
@@ -1328,17 +1331,56 @@ EOD;
                 unset($record->courseid);
                 unset($record->groupid);
                 break;
+        }
+        return calendar_event::create($record)->properties();
+    }
+
+    /**
+     * Helper function used to create a calendar event subscription.
+     *
+     * @param  array $data Associative array of field => value pairs for the new subscription.
+     * @return stdClass Object holding the properties of the newly created subscription.
+     * @throws dml_exception
+     */
+    public function create_calendar_event_subscription(array $data = []): stdClass {
+        global $DB;
+
+        $record = new stdClass();
+        $record->url = 'https://example.com';
+        $record->categoryid = 0;
+        $record->courseid = 0;
+        $record->groupid = 0;
+        $record->userid = 0;
+        $record->eventtype = 'user';
+        $record->pollinterval = 0;
+        $record->lastupdated = null;
+        $record->name = 'subscription name';
+
+        foreach ($data as $key => $value) {
+            $record->$key = $value;
+        }
+
+        switch ($record->eventtype) {
             case 'site':
+            case 'user':
                 unset($record->categoryid);
                 unset($record->courseid);
                 unset($record->groupid);
                 break;
+            case 'group':
+                unset($record->categoryid);
+                break;
+            case 'course':
+                unset($record->categoryid);
+                unset($record->groupid);
+                break;
+            case 'category':
+                unset($record->courseid);
+                unset($record->groupid);
+                break;
         }
-
-        $event = new calendar_event($record);
-        $event->create($record);
-
-        return $event->properties();
+        $subid = $DB->insert_record('event_subscriptions', $record);
+        return $DB->get_record('event_subscriptions', ['id' => $subid], '*', MUST_EXIST);
     }
 
     /**

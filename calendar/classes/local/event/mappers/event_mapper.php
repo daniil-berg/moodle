@@ -84,6 +84,7 @@ class event_mapper implements event_mapper_interface {
                 'timemodified' => $coalesce('timemodified'),
                 'timesort' => $coalesce('timesort'),
                 'visible' => $coalesce('visible'),
+                'uuid' => $coalesce('uuid'),
                 'subscriptionid' => $coalesce('subscriptionid')
             ]
         );
@@ -138,6 +139,7 @@ class event_mapper implements event_mapper_interface {
             'timesort'         => $event->get_times()->get_sort_time()->getTimestamp(),
             'timeusermidnight' => $event->get_times()->get_usermidnight_time()->getTimestamp(),
             'visible'          => $event->is_visible() ? 1 : 0,
+            'uuid'             => $event->get_uuid(),
             'timemodified'     => $event->get_times()->get_modified_time()->getTimestamp(),
             'subscriptionid'   => $event->get_subscription() ? $event->get_subscription()->get('id') : null,
             'actionname'       => $action ? $action->get_name() : null,
