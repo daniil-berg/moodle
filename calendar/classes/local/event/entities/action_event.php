@@ -122,6 +122,10 @@ class action_event implements action_event_interface {
         return $this->event->is_visible();
     }
 
+    public function get_uuid() {
+        return $this->event->get_uuid();
+    }
+
     public function get_action() {
         return $this->action;
     }

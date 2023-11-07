@@ -208,6 +208,7 @@ class core_calendar_repeat_event_collection_event_test_factory implements event_
                 (new \DateTimeImmutable())->setTimestamp(usergetmidnight($dbrow->timesort))
             ),
             !empty($dbrow->visible),
+            $dbrow->uuid,
             new std_proxy($dbrow->subscriptionid, $identity),
             $dbrow->location,
             $dbrow->component

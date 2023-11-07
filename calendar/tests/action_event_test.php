@@ -161,6 +161,10 @@ class core_calendar_action_event_test_event implements event_interface {
         return true;
     }
 
+    public function get_uuid() {
+        return 'abc123';
+    }
+
     /**
      * Component
      * @return string|null

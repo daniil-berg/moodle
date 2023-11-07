@@ -135,6 +135,13 @@ interface event_interface {
     public function is_visible();
 
     /**
+     * Get the event's UUID.
+     *
+     * @return string
+     */
+    public function get_uuid();
+
+    /**
      * Resolved event component (frankenstyle name of activity module or the component)
      * @return string|null
      */

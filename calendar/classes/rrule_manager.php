@@ -723,8 +723,9 @@ class rrule_manager {
             $cloneevent->repeatid = $event->id;
             $cloneevent->timestart = $time;
             unset($cloneevent->id);
-            // UUID should only be set on the first instance of the recurring events.
-            unset($cloneevent->uuid);
+            // Since recurrence rules are not saved to the DB,
+            // we must generate a new UUID for each recurring event.
+            $cloneevent->uuid = \core\uuid::generate();
             calendar_event::create($cloneevent, false);
         }
 
