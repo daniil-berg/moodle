@@ -229,12 +229,10 @@ foreach($events as $event) {
             continue;
         }
     }
-    $hostaddress = str_replace('http://', '', $CFG->wwwroot);
-    $hostaddress = str_replace('https://', '', $hostaddress);
 
     $me = new calendar_event($event); // To use moodle calendar event services.
     $ev = new iCalendar_event; // To export in ical format.
-    $ev->add_property('uid', $event->id.'@'.$hostaddress);
+    $ev->add_property('uid', $me->uuid);
 
     // Set iCal event summary from event name.
     $ev->add_property('summary', format_string($event->name, true, ['context' => $me->context]));

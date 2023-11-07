@@ -233,6 +233,7 @@ class action_event_test_factory implements event_factory_interface {
                 (new \DateTimeImmutable())->setTimestamp($record->timesort ? usergetmidnight($record->timesort) : 0)
             ),
             !empty($record->visible),
+            $record->uuid,
             $subscription,
             $record->location,
             !empty($record->component) ? $record->component : null
