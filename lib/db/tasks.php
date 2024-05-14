@@ -466,4 +466,13 @@ $tasks = array(
         'month' => '*',
         'dayofweek' => '*',
     ],
+    [
+        'classname' => 'core_calendar\task\upgrade_calendar_event_uuids_once_task',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ]
 );

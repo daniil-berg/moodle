@@ -1292,7 +1292,6 @@ EOD;
      * @param  array $data Associative array of field => value pairs for the new event.
      * @return stdClass Object holding the properties of the newly created event.
      * @throws coding_exception
-     * @throws moodle_exception
      */
     public function create_event(array $data = []): stdClass {
         global $CFG;
@@ -1332,7 +1331,11 @@ EOD;
                 unset($record->groupid);
                 break;
         }
-        return calendar_event::create($record)->properties();
+        try {
+            return calendar_event::create($record)->properties();
+        } catch (moodle_exception) {
+            throw new coding_exception("Invalid course id $record->courseid");
+        }
     }
 
     /**
