@@ -1170,5 +1170,14 @@ function xmldb_main_upgrade($oldversion) {
     // Automatically generated Moodle v4.4.0 release upgrade line.
     // Put any upgrade step following this.
 
+    if ($oldversion < 2024051000.01) {
+        // Queue the task for fixing event UUIDs and cleaning up recursive imports.
+        // These actions are deferred until after the upgrade because they can take quite a long time to execute.
+        \core\task\manager::queue_adhoc_task(core_calendar\task\upgrade_calendar_event_uuids_task::instance());
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2024051000.01);
+    }
+
     return true;
 }
