@@ -25,6 +25,7 @@
 namespace core_calendar\task;
 
 use coding_exception;
+use core\output\terminal_progress_bar;
 use core\task\adhoc_task;
 use dml_exception;
 
@@ -63,6 +64,7 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
 
     /**
      * {@inheritDoc}
+     * @throws coding_exception
      * @throws dml_exception
      */
     public function execute(): void {
@@ -128,6 +130,7 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
      *
      * @param string $hostname Host name of the current Moodle instance to match imported UUIDs on.
      * @return int Number of calendar events that have been deleted.
+     * @throws coding_exception
      * @throws dml_exception
      */
     public function clean_up_recursive_events(string $hostname): int {
@@ -157,6 +160,11 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
             return $DB->get_record_sql($parentsql, $params + ['id' => $parentid]);
         };
         // Iterate over all events imported from the same Moodle instance.
+        $progress = new terminal_progress_bar(
+            stepstotal: $numtotal,
+            stepsbetweenoutputs: (int) ceil($numtotal/100),
+            updatestepsnow: $i = 0,
+        );
         foreach ($DB->get_recordset_sql($sql, $params) as $event) {
             // Try to find a parent event that satisfies our conditions.
             $ancestorevent = $getparentevent($event);
@@ -179,7 +187,9 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
                 // We might still have an import cycle. (Subscriptions importing each other.) Move up the ancestry branch.
                 $ancestorevent = $getparentevent($ancestorevent);
             }
+            $progress->update(++$i);
         }
+        mtrace("Deleting event clones...");
         self::batch_delete_events(array_keys($idstodelete));
         return count($idstodelete);
     }
