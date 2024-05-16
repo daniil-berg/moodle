@@ -138,6 +138,7 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
             return $DB->get_record_sql($parentsql, $params + ['id' => $parentid]);
         };
         // Iterate over all events imported from the same Moodle instance.
+        $i = 0;
         foreach ($DB->get_recordset_sql($sql, $params) as $event) {
             // Try to find a parent event that satisfies our conditions.
             $ancestorevent = $getparentevent($event);
@@ -160,7 +161,10 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
                 // We might still have an import cycle. (Subscriptions importing each other.) Move up the ancestry branch.
                 $ancestorevent = $getparentevent($ancestorevent);
             }
+            $i++;
+            self::mtrace_progress($i, $numtotal);
         }
+        mtrace("Deleting event clones...");
         self::batch_delete_events(array_keys($idstodelete));
         return count($idstodelete);
     }
@@ -261,5 +265,22 @@ class upgrade_calendar_event_uuids_task extends adhoc_task {
                  WHERE uuid = ''";
         $DB->execute($sql, ['hostname' => $hostname]);
         return $count;
+    }
+
+    /**
+     * Prints a progress bar to STDOUT.
+     *
+     * Inspired by https://stackoverflow.com/a/27147177.
+     *
+     * @param float|int $done  Number of steps that have been done already
+     * @param float|int $total Total number of steps
+     * @param int $width       Desired width of the progress bar (defaults to 100)
+     */
+    protected static function mtrace_progress(float|int $done, float|int $total, int $width = 100): void {
+        if ($done > $total or $done < 0) { return; }
+        $filled = intval(($done / $total) * $width);
+        $left = $width - $filled;
+        $progress = sprintf("\r[%'={$filled}s>%-{$left}s] - $done/$total ", "", "");
+        mtrace($progress, ($done < $total) ? "" : "\n");
     }
 }
