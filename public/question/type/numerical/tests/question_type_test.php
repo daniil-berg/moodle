@@ -167,6 +167,32 @@ final class question_type_test extends \advanced_testcase {
         }
     }
 
+    /**
+     * A default unit that is numerically equal to an answer must not be stripped off it.
+     *
+     * Regression test for {@link https://moodle.atlassian.net/browse/MDL-89257 MDL-89257}.
+     */
+    public function test_get_question_options_keeps_answer_equal_to_numeric_unit(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $generator->create_question_category();
+        $question = $generator->create_question('numerical', null, ['category' => $cat->id]);
+
+        // Correct answer "1", with a (nonsensical but valid) default unit "1.0".
+        $answerid = $DB->get_field_sql('SELECT MIN(id) FROM {question_answers} WHERE question = ?', [$question->id]);
+        $DB->set_field('question_answers', 'answer', '1', ['id' => $answerid]);
+        $DB->delete_records('question_numerical_units', ['question' => $question->id]);
+        $unitrecord = (object) ['question' => $question->id, 'multiplier' => 1.0, 'unit' => '1.0'];
+        $DB->insert_record('question_numerical_units', $unitrecord);
+
+        // Loading calls get_question_options(), which strips a trailing default unit.
+        $reloaded = \question_bank::load_question_data($question->id);
+        $this->assertSame('1', $reloaded->options->answers[$answerid]->answer);
+    }
+
     public function test_is_valid_number(): void {
         $this->assertTrue(qtype_numerical::is_valid_number('1,001'));
         $this->assertTrue(qtype_numerical::is_valid_number('1.001'));
