@@ -99,7 +99,7 @@ class qtype_numerical extends question_type {
             foreach ($question->options->answers as $key => $val) {
                 $answer = trim($val->answer);
                 $length = strlen($defaultunit->unit);
-                if ($length && substr($answer, -$length) == $defaultunit->unit) {
+                if ($length && substr($answer, -$length) === $defaultunit->unit) {
                     $question->options->answers[$key]->answer =
                             substr($answer, 0, strlen($answer)-$length);
                 }
